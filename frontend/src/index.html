@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>EasyApp</title>
+  <base href="/">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <script>
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                primary: "#6A67FE",
+                secondary: "#FFD233",
+                accent: "#FF6B6B",
+                "background-light": "#F8F7FF",
+                "background-dark": "#121212",
+                "text-light": "#333333",
+                "text-dark": "#F3F4F6",
+                "card-light": "#FFFFFF",
+                "card-dark": "#1F2937",
+                "border-light": "#E5E7EB",
+                "border-dark": "#374151",
+              },
+              fontFamily: {
+                sans: ["Roboto", "sans-serif"],
+              },
+              borderRadius: {
+                lg: "0.75rem",
+                xl: "1.5rem",
+              },
+            },
+          },
+        };
+      </script>
+  <style>
+        body {
+          min-height: max(884px, 100dvh);
+        }
+      </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-sans">
+  <app-root></app-root>
+</body>
+</html>

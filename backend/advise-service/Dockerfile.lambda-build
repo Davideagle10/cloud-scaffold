@@ -1,0 +1,19 @@
+FROM composer:latest
+
+# Set working directory
+WORKDIR /build
+
+# Copy composer files first for better caching
+COPY composer.json ./
+
+# Install dependencies
+# Use --ignore-platform-reqs because we're not running PHP here,
+# just preparing files for Lambda which has its own PHP via Bref
+RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+
+# Copy application files
+COPY api/ ./api/
+COPY app/ ./app/
+
+# Create directories for shared files (will be populated by build script)
+RUN mkdir -p app/Core app/Middleware

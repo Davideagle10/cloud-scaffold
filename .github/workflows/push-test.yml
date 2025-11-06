@@ -1,0 +1,22 @@
+name: Push Test Workflow
+
+on:
+  push:
+    branches-ignore:
+      - 'master'
+
+jobs:
+  auth-test:
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      service_name: auth-service
+
+  advise-test:
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      service_name: advise-service
+
+  frontend-test:
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      service_name: frontend

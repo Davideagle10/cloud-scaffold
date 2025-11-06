@@ -1,0 +1,138 @@
+
+# Docker Compose file for EasyApp Microservices Architecture
+# Environment variables are loaded from .env file
+
+services:
+  # 1. Database Service (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - app-network
+
+  # 2. Auth Service
+  auth-service:
+    build:
+      context: ./backend
+      dockerfile: auth.Dockerfile
+    container_name: auth-service
+    volumes:
+      # Mount only specific directories to avoid overwriting shared core files
+      - ./backend/auth-service/api:/var/www/api
+      - ./backend/auth-service/app/Controllers:/var/www/app/Controllers
+      - ./backend/auth-service/app/Models:/var/www/app/Models
+      - ./backend/auth-service/app/Repositories:/var/www/app/Repositories
+      - ./backend/auth-service/app/Services:/var/www/app/Services
+      - /var/www/vendor
+      # Note: app/Core is NOT mounted as volume so shared files remain
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  # 3. Advise Service
+  advise-service:
+    build:
+      context: ./backend
+      dockerfile: advise.Dockerfile
+    container_name: advise-service
+    volumes:
+      # Mount only specific directories to avoid overwriting shared core files
+      - ./backend/advise-service/api:/var/www/api
+      - ./backend/advise-service/app/Controllers:/var/www/app/Controllers
+      - ./backend/advise-service/app/Models:/var/www/app/Models
+      - ./backend/advise-service/app/Repositories:/var/www/app/Repositories
+      - ./backend/advise-service/app/Services:/var/www/app/Services
+      - ./backend/app/Middleware:/var/www/app/Middleware
+      - /var/www/vendor
+      # Note: app/Core is NOT mounted as volume so shared files remain
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  # 4. Nginx Reverse Proxy
+  nginx-proxy:
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
+    container_name: nginx-proxy
+    restart: always
+    ports:
+      - "${BACKEND_PORT}:80"
+    depends_on:
+      - auth-service
+      - advise-service
+    networks:
+      - app-network
+
+  # 5. Frontend Angular SPA Service (served by NGINX)
+  app-frontend:
+    build:
+      context: .
+      dockerfile: frontend.dockerfile
+    container_name: app-frontend-nginx
+    restart: always
+    ports:
+      - "${FRONTEND_PORT}:80"
+    networks:
+      - app-network
+
+  # 6. Static Assets Server (simulating a CDN)
+  static-server:
+    image: nginx:alpine
+    container_name: static-assets-server
+    restart: always
+    ports:
+      - "${STATIC_ASSETS_PORT}:80"
+    volumes:
+      - ./static-assets:/usr/share/nginx/html
+    networks:
+      - app-network
+
+  # 7. phpMyAdmin Service
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin-container
+    restart: always
+    ports:
+      - "${PHPMYADMIN_PORT}:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: ${DB_USER}
+      PMA_PASSWORD: ${DB_PASS}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
+    driver: local

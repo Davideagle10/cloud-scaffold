@@ -1,0 +1,119 @@
+name: Frontend CI/CD
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+#concurrency:
+#  group: ${{ github.workflow }}-${{ github.ref }}
+#  cancel-in-progress: true
+
+jobs:
+  #test:
+    #uses: ./.github/workflows/reusable-test.yml
+    #with:
+    #  service_name: frontend
+
+  build:
+    #needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '22.12'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Clean previous build
+        run: |
+          cd frontend
+          rm -rf dist
+
+      - name: Build
+        run: |
+          cd frontend 
+          # ./node_modules/.bin/
+          npm run prod
+
+      - name: Flatten build output
+        run: |
+          cd frontend
+          echo "=== Estructura inicial después del build ==="
+          find dist/ -type f | head -10
+          
+          # Si existe la carpeta browser, mover todo a la raíz
+          if [ -d "dist/browser" ]; then
+            echo "📁 Carpeta browser encontrada, moviendo archivos a la raíz..."
+            
+            # Crear directorio temporal
+            mkdir -p dist_temp
+            
+            # Mover contenido de browser a temporal
+            mv dist/browser/* dist_temp/
+            
+            # Limpiar dist y mover archivos de vuelta
+            rm -rf dist/*
+            mv dist_temp/* dist/
+            rmdir dist_temp
+            
+            echo "✅ Archivos movidos a la raíz"
+          else
+            echo "✅ Los archivos ya están en la raíz"
+          fi
+
+      - name: Verify build output
+        run: |
+          cd frontend
+          echo "=== Contenido final de dist/ ==="
+          ls -la dist/
+          echo ""
+          echo "=== Verificando que index.html está en la raíz ==="
+          if [ -f "dist/index.html" ]; then
+            echo "✅ index.html encontrado en la raíz"
+          else
+            echo "❌ index.html NO encontrado en la raíz"
+            echo "Estructura completa:"
+            find dist/ -type f | head -20
+            exit 1
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
+
+      - name: List build output (debug)
+        run: |
+          echo "Contenido de frontend/dist:"
+          ls -la frontend/dist/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: PROD
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend-build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync frontend-build s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete

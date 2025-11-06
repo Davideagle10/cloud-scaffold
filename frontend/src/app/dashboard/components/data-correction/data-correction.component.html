@@ -1,0 +1,38 @@
+<div class="bg-background-light dark:bg-background-dark shadow-lg rounded-lg w-full max-w-sm mx-auto">
+  <div class="p-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-text-light dark:text-text-dark">Corregir Datos</h1>
+    <button (click)="close()" class="bg-red-500 text-white rounded-md p-2 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+  <div class="p-6 space-y-6" [formGroup]="correctionForm">
+    <div>
+      <div class="relative">
+        <select formControlName="campoACorregir" class="w-full appearance-none bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-text-light dark:text-text-dark py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white dark:focus:bg-gray-700 focus:border-gray-500 dark:focus:border-gray-400">
+          <option disabled="" value="">Escoger una opción</option>
+          <option>Correo</option>
+          <option>Teléfono</option>
+          <option>Nombre</option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-light dark:text-text-dark">
+          <span class="material-icons">
+            arrow_drop_down
+          </span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-text-light dark:text-text-dark mb-1" for="valor-anterior">Valor Anterior</label>
+      <input formControlName="valorAnterior" class="w-full bg-gray-100 dark:bg-gray-600 border border-border-light dark:border-border-dark text-gray-500 dark:text-gray-400 py-2 px-3 rounded-lg" id="valor-anterior" type="text"/>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-text-light dark:text-text-dark mb-1" for="valor-nuevo">Valor Nuevo</label>
+      <input formControlName="valorNuevo" class="w-full bg-background-light dark:bg-background-dark border-2 border-primary text-text-light dark:text-text-dark py-2 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" id="valor-nuevo" type="text"/>
+    </div>
+    <div class="flex justify-end">
+      <button (click)="onSubmit()" [disabled]="correctionForm.invalid" class="bg-transparent hover:bg-primary text-primary font-semibold hover:text-white py-2 px-4 border border-primary hover:border-transparent rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+        Actualizar
+      </button>
+    </div>
+  </div>
+</div>

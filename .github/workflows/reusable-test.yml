@@ -1,0 +1,51 @@
+name: Reusable Test Workflow
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up PHP
+        if: ${{ contains(inputs.service_name, 'auth') || contains(inputs.service_name, 'advise') }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: Install Composer dependencies
+        if: ${{ contains(inputs.service_name, 'auth') || contains(inputs.service_name, 'advise') }}
+        run: |
+          cd backend/${{ inputs.service_name }}
+          composer install --no-dev --optimize-autoloader
+
+      - name: Run PHP tests
+        if: ${{ contains(inputs.service_name, 'auth') || contains(inputs.service_name, 'advise') }}
+        run: |
+          echo "No tests found"
+
+      - name: Set up Node.js
+        if: ${{ inputs.service_name == 'frontend' }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: '22.12'
+
+      - name: Install npm dependencies
+        if: ${{ inputs.service_name == 'frontend' }}
+        run: |
+          cd frontend
+          npm install
+
+      - name: Run Angular tests
+        if: ${{ inputs.service_name == 'frontend' }}
+        run: |
+          cd frontend
+          ./node_modules/.bin/ng test --browsers=ChromeHeadlessCI

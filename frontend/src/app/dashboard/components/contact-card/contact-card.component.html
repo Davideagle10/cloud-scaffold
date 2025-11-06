@@ -1,0 +1,57 @@
+<!-- Loading and Error States -->
+<div *ngIf="isLoading" class="text-center p-6">Cargando detalles...</div>
+<div *ngIf="error" class="text-center p-6 text-red-500">{{ error }}</div>
+
+<!-- Main Card Content -->
+<div *ngIf="!isLoading && !error && request" class="w-full max-w-sm mx-auto bg-card-light dark:bg-card-dark rounded-xl shadow-lg">
+  <!-- Card Header -->
+  <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+    <h2 class="text-xl font-semibold text-subtext-light dark:text-subtext-dark">{{ request.nombre }}</h2>
+    <button (click)="closeCard()" class="bg-accent-red text-white w-8 h-8 flex items-center justify-center rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+      <span class="material-icons text-lg">close</span>
+    </button>
+  </div>
+
+  <!-- Card Body -->
+  <div class="p-6">
+    <div class="space-y-4">
+      <!-- Email -->
+      <div>
+        <a class="text-primary dark:text-text-dark hover:underline text-lg" [href]="'mailto:' + request.email">{{ request.email }}</a>
+      </div>
+      <!-- Phone -->
+      <div>
+        <p class="text-primary dark:text-text-dark text-lg">{{ request.telefono || 'No disponible' }}</p>
+      </div>
+      <!-- Languages -->
+      <div *ngIf="request.idiomas && request.idiomas.length > 0">
+        <h3 class="text-text-light dark:text-text-dark text-lg">Idiomas:</h3>
+        <ul class="list-none pl-1 mt-1 space-y-1">
+          <li *ngFor="let idioma of request.idiomas" class="text-primary dark:text-text-dark text-lg">* {{ idioma }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="mt-8 flex justify-between">
+      <button
+        (click)="updateStatus(false)"
+        [ngClass]="{
+          'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-500 text-black dark:text-white': request.estado_contacto,
+          'bg-black text-white dark:bg-white dark:text-black': !request.estado_contacto
+        }"
+        class="px-6 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50">
+        No contactado
+      </button>
+      <button
+        (click)="updateStatus(true)"
+        [ngClass]="{
+          'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-500 text-black dark:text-white': !request.estado_contacto,
+          'bg-black text-white dark:bg-white dark:text-black': request.estado_contacto
+        }"
+        class="px-6 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50">
+        Contactado
+      </button>
+    </div>
+  </div>
+</div>

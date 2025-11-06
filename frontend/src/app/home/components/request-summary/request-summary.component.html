@@ -1,0 +1,32 @@
+<div *ngIf="isLoading" class="flex justify-center items-center p-6">
+  <p class="text-[var(--text-light)]">Loading...</p>
+</div>
+
+<div *ngIf="hasError" class="flex justify-center items-center p-6">
+  <p class="text-red-500">Error loading summary. Please try again later.</p>
+</div>
+
+<div *ngIf="!isLoading && !hasError && summary" class="bg-[var(--background-light)] rounded-lg shadow-lg p-6 max-w-sm w-full border border-[var(--border-light)]">
+  <div class="flex justify-between items-center pb-2 border-b border-[var(--border-light)]">
+    <h2 class="text-lg font-medium text-[var(--text-light)]">{{ summary.nombreSolicitante }}</h2>
+    <button (click)="close()" class="bg-red-500 hover:bg-red-600 text-white font-bold p-1 rounded-md flex items-center justify-center w-6 h-6">
+      <span class="material-icons" style="font-size: 16px;">close</span>
+    </button>
+  </div>
+  <div class="mt-4">
+    <p class="text-[var(--text-light)] font-semibold text-lg">Solicitud enviada</p>
+    <div class="mt-2">
+      <p class="text-[var(--text-light)] font-medium">Idiomas:</p>
+      <ul class="list-none pl-1 mt-1 space-y-1">
+        <li *ngFor="let language of summary.idiomasSolicitados" class="flex items-center text-[var(--text-light)]">
+          <span class="text-[var(--text-light)] mr-2">*</span> {{ language }}
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div class="mt-6 flex justify-end">
+    <button (click)="close()" class="px-4 py-2 border border-[var(--primary)] text-[var(--primary)] rounded-md hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors">
+      Volver al Inicio
+    </button>
+  </div>
+</div>

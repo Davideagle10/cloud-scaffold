@@ -1,0 +1,95 @@
+<div class="container mx-auto px-4">
+  <header class="flex justify-between items-center py-4">
+    <div class="flex items-center space-x-2">
+      <a  href="#">
+      <img
+        alt="EasyApp Logo"
+        class="h-8 w-8"
+        src="https://lh3.googleusercontent.com/aida-public/AB6AXuC40uErYKI3tDXM7Gu_ME4a3kZwY1AwifYV8_vBiSXv6JJ_vGxv8BQKlhxy-4k9OaFLLIhx5peEdocVqb1e2odeG425QW-rFDu1uwtvlAR31cQHO1s14xKWkEu_XVkYrlowrfQmyOLkNUY9kViiN8KOExuMYlrouFKK-cPjhVVuPqe9ReOHwm2MWcYOZBg6-R2DlZYosBewnS9594zo4M8aUpTyDan6cytuDtSeJ0LlFQvYe0UyuMTwe4uZnWBCkZerwKdwJrxly7g"
+      />
+      </a>
+      <a  href="#">
+      <span class="text-2xl font-bold text-text-light dark:text-text-dark"
+        >EasyApp</span>
+      </a>
+    </div>
+    <nav class="hidden md:flex items-center space-x-6">
+      <a
+        class="text-text-light dark:text-text-dark hover:text-primary dark:hover:text-primary"
+        href="#"
+        >Inicio</a
+      >
+      <a
+        class="text-text-light dark:text-text-dark hover:text-primary dark:hover:text-primary"
+        href="#"
+        >Servicios</a
+      >
+      <a
+        class="text-text-light dark:text-text-dark hover:text-primary dark:hover:text-primary"
+        href="#"
+        >Sobre Nosotros</a
+      >
+      <a
+        class="text-text-light dark:text-text-dark hover:text-primary dark:hover:text-primary"
+        href="#"
+        >Contacto</a
+      >
+    </nav>
+    <a href="/register" routerLink="/register"
+      class="hidden md:block bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+    >
+      ¡Empieza Ahora!
+    </a>
+    <button class="md:hidden">
+      <span class="material-icons text-text-light dark:text-text-dark"
+        >menu</span
+      >
+    </button>
+  </header>
+  <router-outlet />
+</div>
+<footer class="bg-gray-800 text-white mt-16">
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-center">
+      <div class="flex items-center space-x-2 mb-4 md:mb-0">
+        <img
+          alt="EasyApp Logo"
+          class="h-8 w-8"
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKcIysUv_3DDvEpc6JnNPPWwjsynxilhKtWDHjN1Q5eghwxEWTDhEJu2bW1RQ4kVzCVHR4IQFxxjDdqW9uB3NFVTibL-bekJxuyHJaZ5kaQpDwoWj8y9nKCZMlqVR-br2GLZZZlhpfNK4_IKnE5zl6QcELD5wDvXdztOXyLpgsbxe8ev6zG7l8U4XQd3ak-WDi_YN7eQhu-KEzLz-fJEra10juvU-rMUDm2ErBDlNf4gh8kGr2vIpe5kLeAU9iw7LKByevTAh7FpE"
+        />
+        <span class="text-2xl font-bold">EasyApp</span>
+      </div>
+      <nav class="flex space-x-4 mb-4 md:mb-0">
+        <a class="hover:text-primary" href="#">Inicio</a>
+        <a class="hover:text-primary" href="#">Servicios</a>
+        <a class="hover:text-primary" href="#">Sobre Nosotros</a>
+        <a routerLink="/auth" class="hover:text-primary">Login</a>
+      </nav>
+      <div class="text-center md:text-right">
+        <p>(949) 390 3804</p>
+        <p>direccion@leader.com</p>
+        <p>(949) 390 3804</p>
+        <div class="flex justify-center md:justify-end space-x-3 mt-2">
+          <a href="#"
+            ><img
+              alt="Facebook icon"
+              class="w-6 h-6"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7h__2KLETiN1bl8P7pkFOQNeOXJ-lSUQD_NNA0miL-4l3ELHq--DlRMSWazKwwwz9VFnkaKKzTdIXZAvMeVQTZGNeJden9qgo8OIU3rCr74fLN8O4pk4y0lER_NGFn2H8sE5fZs0Zs9WVs7ED36mX1dUHRZaZocv7QjmW3-6hMCak7cF0ttw7Ug-E5pB4FFarmzcyR0d9G-yejHgpvxJmYduw0HJe6kHLFnBLlrCgDHzk5FjVcTv0AqPsR4iF--h-TPy8wJ1NlUg"
+          /></a>
+          <a href="#"
+            ><img
+              alt="Instagram icon"
+              class="w-6 h-6"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAz60mrW3oo77ZGB4L8TnMGsVOlbJ-F-sDh1B2wglMWGF8JbH636vC51F9tQD1U-tslYYPguDo94cLw2PigoR28lf3R7UoYo-BtQBCkWpvgW0mGM61eVivXaT729kjS8ZXoOx01XEhZV6mBGMhzP7WY7nTa7r8eLpHMvTu_6bKlvkR-0GVo8VZYHU7HnrOwUKHKup8935UTSCaWTQqRRX2H6kDhlrGmZIn9bpDfQlTAChs_xJS2Xor5JnhVB9tb_0vsFGa5QD_dQzY"
+          /></a>
+          <a href="#"
+            ><img
+              alt="LinkedIn icon"
+              class="w-6 h-6"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiN5IPw7gzgRt4La5_xi2nqwL7mTepoIMxRqbtOCGI8ZLJsPONyr_teWBiJQ-Nr6lqOtU91QrYW0IWYiy7wZT1gy6IssiNscaHGFR8fq2YybR4CN20aCNVreKGjY0bLMewtS0-K5j-li_X0Eb_YaouD9JpVqOFhDibPEXHJHWsIspn1m4iFbDx9jIG8I873HbPvaQBhWJJRoYWjGGwX0yMdqUrZU4QI1YccKeeBaJlDQAUxWfFVOFZSFSeJLbJw8u1Z1BB3-_WLg4"
+          /></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>

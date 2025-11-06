@@ -1,0 +1,131 @@
+<div class="max-w-4xl mx-auto space-y-6 p-4">
+  <!-- Filter Section -->
+  <div class="bg-background-light dark:bg-background-dark p-6 rounded-lg border border-border-light dark:border-border-dark shadow-md">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Filtros</h2>
+      <div>
+        <button (click)="toggleFilters()" class="flex items-center text-sm font-semibold text-text-light dark:text-text-dark mr-4">
+          Minimizar Filtros
+          <span class="material-icons ml-1 transform transition-transform" [ngClass]="{ 'rotate-90': !filtersVisible, '-rotate-90': filtersVisible }">chevron_left</span>
+        </button>
+        <button (click)="logout()" class="flex items-center text-sm font-semibold text-red-500 dark:text-red-400">
+          Logout
+          <span class="material-icons ml-1">exit_to_app</span>
+        </button>
+      </div>
+    </div>
+
+    <form [formGroup]="filterForm" *ngIf="filtersVisible" class="space-y-6">
+      <!-- Name and Email Filters -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium mb-1" for="nombres">Nombres</label>
+          <input formControlName="nombres" class="w-full rounded-md border-border-light dark:border-border-dark bg-background-light dark:bg-tag-bg-dark focus:ring-primary focus:border-primary" id="nombres" type="text"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="correo">Correo Electronico</label>
+          <input formControlName="correo" class="w-full rounded-md border-border-light dark:border-border-dark bg-background-light dark:bg-tag-bg-dark focus:ring-primary focus:border-primary" id="correo" placeholder="name@example.com" type="email"/>
+        </div>
+      </div>
+
+      <!-- Language Filters -->
+      <div>
+        <label class="block text-sm font-medium mb-2">Idiomas</label>
+        <div class="flex flex-wrap gap-2">
+          <button *ngFor="let lang of availableLanguages"
+                  (click)="onLanguageToggle(lang)"
+                  [ngClass]="{
+                    'bg-primary text-tag-text-active-light': isLanguageSelected(lang),
+                    'bg-tag-bg-light dark:bg-tag-bg-dark text-tag-text-light dark:text-tag-text-dark': !isLanguageSelected(lang)
+                  }"
+                  class="px-4 py-2 text-sm font-semibold rounded-full"
+                  type="button">
+            {{ lang }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Contacted Filter -->
+      <div>
+        <label class="block text-sm font-medium mb-2">Contactados</label>
+        <div class="flex items-center">
+          <input formControlName="contactado" id="contactados" type="checkbox" class="h-5 w-5 rounded border-border-light dark:border-border-dark text-primary focus:ring-primary bg-tag-bg-light dark:bg-tag-bg-dark"/>
+          <label class="ml-2 text-sm" for="contactados">Solo contactados</label>
+        </div>
+      </div>
+
+      <!-- Date Range Filters -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium mb-1">Fecha Contacto</label>
+          <div class="flex space-x-2">
+            <input formControlName="fecha_contacto_inicio" class="w-full rounded-md border-border-light dark:border-border-dark bg-background-light dark:bg-tag-bg-dark focus:ring-primary focus:border-primary" type="date"/>
+            <input formControlName="fecha_contacto_fin" class="w-full rounded-md border-border-light dark:border-border-dark bg-background-light dark:bg-tag-bg-dark focus:ring-primary focus:border-primary" type="date"/>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Fecha Creación</label>
+          <div class="flex space-x-2">
+            <input formControlName="fecha_creacion_inicio" class="w-full rounded-md border-border-light dark:border-border-dark bg-background-light dark:bg-tag-bg-dark focus:ring-primary focus:border-primary" type="date"/>
+            <input formControlName="fecha_creacion_fin" class="w-full rounded-md border-border-light dark:border-border-dark bg-background-light dark:bg-tag-bg-dark focus:ring-primary focus:border-primary" type="date"/>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Records View Section -->
+  <div class="bg-background-light dark:bg-background-dark p-6 rounded-lg border border-border-light dark:border-border-dark shadow-md overflow-x-auto">
+    <h2 class="text-xl font-bold mb-4">VISTA DE REGISTROS</h2>
+
+    <!-- Error Message -->
+    <div *ngIf="error" class="bg-error-light border border-error-text-light text-error-text-light px-4 py-3 rounded relative mb-4" role="alert">
+      <strong class="font-bold">Error:</strong>
+      <span class="block sm:inline">{{ error }}</span>
+    </div>
+
+    <table class="w-full text-sm text-left">
+      <thead class="bg-tag-bg-light dark:bg-tag-bg-dark">
+        <tr>
+          <th class="p-3 font-semibold"><input type="checkbox" class="rounded border-border-light dark:border-border-dark text-primary focus:ring-primary bg-tag-bg-light dark:bg-tag-bg-dark"/></th>
+          <th class="p-3 font-semibold">email</th>
+          <th class="p-3 font-semibold">Idiomas</th>
+          <th class="p-3 font-semibold">Fecha Creación</th>
+          <th class="p-3 font-semibold">Fecha Contacto</th>
+          <th class="p-3 font-semibold"></th>
+        </tr>
+      </thead>
+      <ng-container *ngIf="(requests$ | async) as requests; else loading">
+        <tbody>
+          <tr *ngIf="requests.length === 0 && !error">
+            <td colspan="6" class="p-4 text-center text-text-light dark:text-text-dark opacity-50">
+              No se encontraron registros con los filtros actuales.
+            </td>
+          </tr>
+          <tr *ngFor="let request of requests" class="border-b border-border-light dark:border-border-dark">
+            <td class="p-3"><input type="checkbox" class="rounded border-border-light dark:border-border-dark text-primary focus:ring-primary bg-tag-bg-light dark:bg-tag-bg-dark"/></td>
+            <td class="p-3">{{ request.correo }}</td>
+            <td class="p-3">{{ request.idiomas?.join(', ') || 'N/A' }}</td>
+            <td class="p-3">{{ request.fecha_creacion | date:'dd/MM/yyyy' }}</td>
+            <td class="p-3">{{ request.fecha_contacto ? (request.fecha_contacto | date:'dd/MM/yyyy') : '.../.../...' }}</td>
+            <td class="p-3 relative">
+              <button class="text-text-light dark:text-text-dark">
+                <span class="material-icons">more_vert</span>
+              </button>
+              <!-- Dropdown menu can be implemented here -->
+            </td>
+          </tr>
+        </tbody>
+      </ng-container>
+      <ng-template #loading>
+        <tbody>
+          <tr>
+            <td colspan="6" class="p-4 text-center text-text-light dark:text-text-dark opacity-50">
+              Cargando registros...
+            </td>
+          </tr>
+        </tbody>
+      </ng-template>
+    </table>
+  </div>
+</div>

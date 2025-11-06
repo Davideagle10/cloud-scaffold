@@ -1,0 +1,76 @@
+# Workflow para Despliegue Automático a un servidor FTP
+
+name: Deploy to FTP Server
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - masterss # Se activa en cada push a la rama 'main'
+
+jobs:
+  deploy:
+    name: FTP Deploy
+    runs-on: ubuntu-latest
+    environment: PROD
+    permissions:
+      contents: write 
+
+    steps:
+      # 1. Checkout del Repositorio
+      # Este paso descarga el código de tu repositorio a la máquina virtual de Actions.
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Generate .env file with Secrets
+        run: |
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
+
+      # 2. Despliegue por FTP
+      # Utiliza la acción SamKirkland/FTP-Deploy-Action para transferir los archivos.
+      - name: 3. FTP Deploy Action
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          # --- Configuración de Conexión (A2) ---
+          # Utiliza los secrets configurados en tu repositorio de GitHub para una conexión segura.
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+
+          # --- Regla de Despliegue (A3) ---
+          # Define el directorio raíz en el servidor donde se subirán los archivos.
+          server-dir: ${{ secrets.FTP_PATH }}
+          dangerous-clean-slate: true 
+
+          # --- Regla de Exclusión (A4) ---
+          # Ignora explícitamente la carpeta './documents' y otros archivos innecesarios.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/documents/**
+            **README.md**
+            **/.github**
+
+      # 3. Creación y Push del Tag de Versión (A5)
+      # Este paso se ejecuta solo si el despliegue por FTP fue exitoso.
+      - name: 4. Create and Push Version Tag
+        run: |
+          # Configura Git con la identidad del bot de GitHub Actions.
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+          # Genera el nombre del tag con el formato vYYYYMMDD.HHMM.
+          TAG_NAME="v$(date +'%Y%m%d.%H%M')"
+          echo "Creating tag: $TAG_NAME"
+
+          # Crea el tag localmente y lo empuja al repositorio remoto.
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+        env:
+          # El GITHUB_TOKEN es un secret especial proporcionado por Actions
+          # para autenticar operaciones contra el repositorio.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

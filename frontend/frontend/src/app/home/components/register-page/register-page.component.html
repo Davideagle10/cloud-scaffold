@@ -1,0 +1,47 @@
+<div class="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark rounded-lg shadow-xl w-full max-w-md">
+  <div class="flex justify-between items-center p-4 border-b border-border-light dark:border-border-dark">
+    <h1 class="text-2xl font-bold">Solicitud Asesoría</h1>
+    <button (click)="close()" class="bg-primary text-white rounded-md p-1 hover:bg-red-700 transition-colors">
+      <span class="material-symbols-outlined !text-lg">close</span>
+    </button>
+  </div>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-6 space-y-6">
+    <div>
+      <label class="block text-sm font-medium mb-1" for="email">Correo Electronico</label>
+      <input class="w-full border border-border-light dark:border-border-dark rounded-md px-3 py-2 bg-background-light dark:bg-background-dark focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" id="email" formControlName="email" type="email" />
+      <div *ngIf="form.get('email')?.invalid && form.get('email')?.touched" class="bg-error-light dark:bg-error-dark text-error-text-light dark:text-error-text-dark p-3 rounded-md mt-2 text-sm">
+        Correo Incorrecto
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1" for="name">Nombres</label>
+      <input class="w-full border border-border-light dark:border-border-dark rounded-md px-3 py-2 bg-background-light dark:bg-background-dark focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" id="name" formControlName="name" type="text" />
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1" for="phone">Teléfono</label>
+      <input class="w-full border border-border-light dark:border-border-dark rounded-md px-3 py-2 bg-background-light dark:bg-background-dark focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" id="phone" formControlName="phone" type="tel" />
+      <div *ngIf="form.get('phone')?.invalid && form.get('phone')?.touched" class="bg-error-light dark:bg-error-dark text-error-text-light dark:text-error-text-dark p-3 rounded-md mt-2 text-sm">
+        Teléfono Incorrecto
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-2">Cursos</label>
+      <div class="flex flex-wrap gap-2">
+        <button *ngFor="let curso of cursos" (click)="toggleCurso(curso)" [ngClass]="{
+            'bg-tag-bg-active-light dark:bg-tag-bg-active-dark text-tag-text-active-light dark:text-tag-text-active-dark': form.get('cursos')?.value.includes(curso),
+            'bg-tag-bg-light dark:bg-tag-bg-dark text-tag-text-light dark:text-tag-text-dark': !form.get('cursos')?.value.includes(curso)
+          }" class="px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" type="button">
+          {{ curso }}
+        </button>
+      </div>
+      <div *ngIf="form.get('cursos')?.invalid && form.get('cursos')?.touched" class="bg-error-light dark:bg-error-dark text-error-text-light dark:text-error-text-dark p-3 rounded-md mt-4 text-sm">
+        Seleccione al menos uno
+      </div>
+    </div>
+    <div class="flex justify-end pt-4">
+      <button [disabled]="form.invalid" class="bg-white dark:bg-gray-700 text-green-600 dark:text-green-400 border border-green-600 dark:border-green-400 rounded-md px-6 py-2 hover:bg-green-50 dark:hover:bg-gray-600 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed" type="submit">
+        Guardar
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,64 @@
+name: Auth Service CI/CD
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+#concurrency:
+#  group: ${{ github.workflow }}-${{ github.ref }}
+#  cancel-in-progress: true
+
+jobs:
+  test:
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      service_name: auth-service
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: Prepare Lambda package
+        run: |
+          cd backend/auth-service
+          # Run the Lambda preparation script
+          bash prepare-lambda.sh
+
+      - name: Create deployment package
+        run: |
+          cd backend/auth-service/lambda-build
+          zip -r ../deployment.zip . -x "*.git*" -x "*.env*"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-deployment-package
+          path: backend/auth-service/deployment.zip
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: PROD
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-deployment-package
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_LAMBDA_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_LAMBDA_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to AWS Lambda
+        run: aws lambda update-function-code --function-name ${{ secrets.AUTH_LAMBDA_AUTH_FUNCTION_NAME }} --zip-file fileb://deployment.zip

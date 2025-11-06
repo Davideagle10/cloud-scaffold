@@ -1,0 +1,112 @@
+name: Terraform Destroy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: 'Terraform Destroy'
+    environment: PROD
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_TERRAFORM_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_TERRAFORM_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_wrapper: false
+
+    - name: Install jq
+      run: sudo apt-get update && sudo apt-get install -y jq
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform
+
+    - name: Empty S3 Bucket Before Destroy
+      run: |
+        # Definir el nombre del bucket directamente
+        BUCKET_NAME="language-advisory-platform-frontend"
+        
+        echo "Verificando bucket: $BUCKET_NAME"
+        
+        # Verificar si el bucket existe
+        if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+          echo "✅ Bucket encontrado: $BUCKET_NAME"
+          echo "🗑️ Vaciando el bucket..."
+          
+          # Verificar si el bucket tiene versionado habilitado
+          VERSIONING=$(aws s3api get-bucket-versioning --bucket "$BUCKET_NAME" --query 'Status' --output text 2>/dev/null || echo "None")
+          echo "Estado de versionado: $VERSIONING"
+          
+          if [ "$VERSIONING" = "Enabled" ]; then
+            echo "Eliminando versiones de objetos..."
+            
+            # Eliminar todas las versiones de objetos
+            aws s3api list-object-versions --bucket "$BUCKET_NAME" --output json | \
+            jq -r '.Versions[]? | "--key \"" + .Key + "\" --version-id " + .VersionId' | \
+            while read -r line; do
+              if [ -n "$line" ]; then
+                aws s3api delete-object --bucket "$BUCKET_NAME" $line || true
+              fi
+            done
+            
+            # Eliminar delete markers
+            aws s3api list-object-versions --bucket "$BUCKET_NAME" --output json | \
+            jq -r '.DeleteMarkers[]? | "--key \"" + .Key + "\" --version-id " + .VersionId' | \
+            while read -r line; do
+              if [ -n "$line" ]; then
+                aws s3api delete-object --bucket "$BUCKET_NAME" $line || true
+              fi
+            done
+          fi
+          
+          # Eliminar objetos actuales (funciona con o sin versionado)
+          echo "Eliminando objetos actuales..."
+          aws s3 rm s3://"$BUCKET_NAME" --recursive || true
+          
+          # Verificar que el bucket está vacío
+          OBJECT_COUNT=$(aws s3api list-objects-v2 --bucket "$BUCKET_NAME" --query 'KeyCount' --output text 2>/dev/null || echo "0")
+          echo "Objetos restantes: $OBJECT_COUNT"
+          
+          if [ "$OBJECT_COUNT" = "0" ]; then
+            echo "✅ Bucket vaciado completamente"
+          else
+            echo "⚠️ Aún quedan $OBJECT_COUNT objetos en el bucket"
+          fi
+          
+        else
+          echo "ℹ️ El bucket $BUCKET_NAME no existe, continuando..."
+        fi
+      working-directory: ./terraform
+
+    - name: Force Delete S3 Bucket (if Terraform fails)
+      run: |
+        BUCKET_NAME="language-advisory-platform-frontend"
+        
+        # Intentar eliminar el bucket directamente si aún existe después del destroy
+        if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+          echo "🔨 Forzando eliminación del bucket..."
+          aws s3 rb s3://"$BUCKET_NAME" --force || true
+          
+          if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+            echo "❌ No se pudo eliminar el bucket automáticamente"
+            echo "Puede requerir eliminación manual desde la consola de AWS"
+          else
+            echo "✅ Bucket eliminado exitosamente"
+          fi
+        fi
+      working-directory: ./terraform
+
+    - name: Terraform Destroy
+      run: terraform destroy -auto-approve
+      working-directory: ./terraform

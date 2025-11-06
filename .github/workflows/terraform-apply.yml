@@ -1,0 +1,67 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: 'Terraform Apply'
+    environment: PROD
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: mbstring, pdo_mysql
+        tools: composer
+
+    - name: Prepare Auth Service Lambda package
+      run: |
+        cd backend/auth-service
+        bash prepare-lambda.sh
+
+    - name: Prepare Advise Service Lambda package
+      run: |
+        cd backend/advise-service
+        bash prepare-lambda.sh
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_TERRAFORM_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_TERRAFORM_SECRET_ACCESS_KEY }}
+        aws-region:  ${{ secrets.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform
+
+    - name: Terraform Format
+      run: terraform fmt
+      working-directory: ./terraform
+
+    - name: Terraform Plan
+      env:
+       TF_VAR_aws_access_key_dynamo_user: ${{ secrets.TF_VAR_AWS_ACCESS_KEY_DYNAMO_USER }}
+       TF_VAR_aws_region: ${{ secrets.TF_VAR_AWS_REGION }}
+       TF_VAR_aws_secret_access_key_dynamo_user: ${{ secrets.TF_VAR_AWS_SECRET_ACCESS_KEY_DYNAMO_USER }}
+       TF_VAR_jwt_secret: ${{ secrets.TF_VAR_JWT_SECRET }}
+      run: terraform plan
+      working-directory: ./terraform
+
+    - name: Terraform Apply
+      env:
+       TF_VAR_aws_access_key_dynamo_user: ${{ secrets.TF_VAR_AWS_ACCESS_KEY_DYNAMO_USER }}
+       TF_VAR_aws_region: ${{ secrets.TF_VAR_AWS_REGION }}
+       TF_VAR_aws_secret_access_key_dynamo_user: ${{ secrets.TF_VAR_AWS_SECRET_ACCESS_KEY_DYNAMO_USER }}
+       TF_VAR_jwt_secret: ${{ secrets.TF_VAR_JWT_SECRET }}
+      run: terraform apply -auto-approve
+      working-directory: ./terraform
