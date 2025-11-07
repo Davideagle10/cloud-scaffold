@@ -32,30 +32,17 @@ jobs:
       run: terraform init
       working-directory: ./terraform
 
-    - name: Get S3 Bucket Name from Terraform State
-      id: get-bucket
-      run: |
-        # Obtener el nombre del bucket del estado de Terraform
-        BUCKET_NAME=$(terraform output -raw bucket_name 2>/dev/null || echo "")
-        if [ -z "$BUCKET_NAME" ]; then
-          # Si no hay output, intentar obtenerlo del state
-          BUCKET_NAME=$(terraform state list 2>/dev/null | grep aws_s3_bucket | head -1 | cut -d'"' -f2 || echo "")
-        fi
-        echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
-        echo "Bucket detectado: $BUCKET_NAME"
-      working-directory: ./terraform
-
     - name: Empty S3 Bucket Before Destroy
-      if: steps.get-bucket.outputs.bucket_name != ''
       run: |
-        BUCKET_NAME="${{ steps.get-bucket.outputs.bucket_name }}"
+        # Definir el nombre del bucket directamente
+        BUCKET_NAME="cloud-scaffold-frontend-dev"
         
         echo "Verificando bucket: $BUCKET_NAME"
         
         # Verificar si el bucket existe
         if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
-          echo "✅ Bucket encontrado: $BUCKET_NAME"
-          echo "🗑️ Vaciando el bucket..."
+          echo " Bucket encontrado: $BUCKET_NAME"
+          echo " Vaciando el bucket..."
           
           # Verificar si el bucket tiene versionado habilitado
           VERSIONING=$(aws s3api get-bucket-versioning --bucket "$BUCKET_NAME" --query 'Status' --output text 2>/dev/null || echo "None")
@@ -92,13 +79,31 @@ jobs:
           echo "Objetos restantes: $OBJECT_COUNT"
           
           if [ "$OBJECT_COUNT" = "0" ]; then
-            echo "Bucket vaciado completamente"
+            echo " Bucket vaciado completamente"
           else
-            echo " Aún quedan $OBJECT_COUNT objetos en el bucket"
+            echo "Aún quedan $OBJECT_COUNT objetos en el bucket"
           fi
           
         else
           echo "El bucket $BUCKET_NAME no existe, continuando..."
+        fi
+      working-directory: ./terraform
+
+    - name: Force Delete S3 Bucket (if Terraform fails)
+      run: |
+        BUCKET_NAME="cloud-scaffold-frontend-dev"
+        
+        # Intentar eliminar el bucket directamente si aún existe después del destroy
+        if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+          echo "Forzando eliminación del bucket..."
+          aws s3 rb s3://"$BUCKET_NAME" --force || true
+          
+          if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+            echo "No se pudo eliminar el bucket automáticamente"
+            echo "Puede requerir eliminación manual desde la consola de AWS"
+          else
+            echo " Bucket eliminado exitosamente"
+          fi
         fi
       working-directory: ./terraform
 
@@ -111,21 +116,3 @@ jobs:
         TF_VAR_aws_secret_access_key_dynamo_user: ${{ secrets.TF_VAR_AWS_SECRET_ACCESS_KEY_DYNAMO_USER }}
         TF_VAR_jwt_secret: ${{ secrets.TF_VAR_JWT_SECRET }}
         TF_VAR_account_id: ${{ secrets.TF_VAR_ACCOUNT_ID }}
-
-    - name: Force Cleanup if Destroy Fails
-      if: failure()
-      run: |
-        echo "🔨 Ejecutando limpieza forzada..."
-        BUCKET_NAME="${{ steps.get-bucket.outputs.bucket_name }}"
-        
-        # Intentar eliminar el bucket si aún existe
-        if [ -n "$BUCKET_NAME" ] && aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
-          echo "Forzando eliminación del bucket: $BUCKET_NAME"
-          aws s3 rb s3://"$BUCKET_NAME" --force || true
-        fi
-        
-        # Listar recursos huérfanos
-        echo "📋 Recursos que podrían requerir limpieza manual:"
-        aws dynamodb list-tables --query "TableNames[?contains(@, 'Cloud-Scaffold')]" --output table || true
-        aws lambda list-functions --query "Functions[?contains(FunctionName, 'Cloud-Scaffold')].FunctionName" --output table || true
-      working-directory: ./terraform
