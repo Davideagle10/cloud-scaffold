@@ -59,6 +59,7 @@ jobs:
 
     - name: Terraform Apply
       env:
+       TF_VAR_account_id: ${{ secrets.TF_VAR_account_id }}
        TF_VAR_aws_access_key_dynamo_user: ${{ secrets.TF_VAR_AWS_ACCESS_KEY_DYNAMO_USER }}
        TF_VAR_aws_region: ${{ secrets.TF_VAR_AWS_REGION }}
        TF_VAR_aws_secret_access_key_dynamo_user: ${{ secrets.TF_VAR_AWS_SECRET_ACCESS_KEY_DYNAMO_USER }}
