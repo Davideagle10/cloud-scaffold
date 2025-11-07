@@ -92,12 +92,12 @@ cd project
 APP_ENV=local
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=easyapp
+DB_DATABASE=cloudscaffold
 DB_USERNAME=root
 DB_PASSWORD=secret
 
 # SNS (if using localstack or mock)
-SNS_TOPIC_ARN=arn:aws:sns:us-east-1:123456789012:easyapp-topic
+SNS_TOPIC_ARN=arn:aws:sns:us-east-1:123456789012:cloudscaffold-topic
 
 # Ports
 FRONTEND_PORT=4200
@@ -168,7 +168,7 @@ terraform apply -var-file=terraform.tfvars
 2. Example `terraform.tfvars` (relevant fields):
 
 ```hcl
-project_name = "easyapp"
+project_name = "cloud-scaffold"
 environment  = "dev"
 notification_email = "ops@example.com"
 bref_php_layer = "arn:aws:lambda:us-east-1:212019880728:layer:php-81:5"
@@ -383,12 +383,12 @@ Environment variables (example .env.example):
 APP_ENV=local
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=easyapp
+DB_DATABASE=cloudscaffold
 DB_USERNAME=root
 DB_PASSWORD=secret
 
 # SNS (if using localstack or mock)
-SNS_TOPIC_ARN=arn:aws:sns:us-east-1:123456789012:easyapp-topic
+SNS_TOPIC_ARN=arn:aws:sns:us-east-1:123456789012:cloudscaffold-topic
 
 # Ports
 FRONTEND_PORT=4200
@@ -468,7 +468,7 @@ terraform apply -var-file=terraform.tfvars
 Example terraform.tfvars (relevant fields):
 
 
-project_name = "easyapp"
+project_name = "cloud-scaffold"
 environment  = "dev"
 notification_email = "ops@example.com"
 bref_php_layer = "arn:aws:lambda:us-east-1:212019880728:layer:php-81:5"

@@ -23,7 +23,6 @@ variable "jwt_secret" {
 variable "account_id" {
   description = "The AWS account ID"
   type        = string
-  default     = ""
 }
 
 variable "bref_php_layer" {
