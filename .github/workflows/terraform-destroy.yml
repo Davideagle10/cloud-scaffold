@@ -1,11 +1,11 @@
-name: Terraform Destroy
+name: Terraform Destroy 
 
 on:
   workflow_dispatch:
 
 jobs:
-  terraform:
-    name: 'Terraform Destroy'
+  terraform-destroy:
+    name: 'Terraform Destroy - Complete Cleanup'
     environment: PROD
     runs-on: ubuntu-latest
 
@@ -20,99 +20,78 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_TERRAFORM_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
+    - name: Cleanup Orphaned Resources FIRST
+      run: |
+        echo "🧹 CLEANING ORPHANED RESOURCES FIRST..."
+        
+        # 1. CloudFront (primero porque depende de otros)
+        aws cloudfront list-distributions --query "DistributionList.Items[?contains(Comment, 'Cloud-Scaffold')].Id" --output text | \
+        while read dist_id; do
+          echo "🗑️ Deleting CloudFront: $dist_id"
+          aws cloudfront delete-distribution --id "$dist_id" || true
+        done
+
+        # 2. API Gateway 
+        aws apigateway get-rest-apis --query "items[?contains(name, 'Cloud-Scaffold')].id" --output text | \
+        while read api_id; do
+          echo "🗑️ Deleting API Gateway: $api_id"
+          aws apigateway delete-rest-api --rest-api-id "$api_id" || true
+        done
+
+        # 3. Lambda Functions
+        aws lambda list-functions --query "Functions[?contains(FunctionName, 'Cloud-Scaffold')].FunctionName" --output text | \
+        while read function; do
+          echo "🗑️ Deleting Lambda: $function"
+          aws lambda delete-function --function-name "$function" || true
+        done
+
+        # 4. DynamoDB Tables
+        aws dynamodb list-tables --query "TableNames[?contains(@, 'Cloud-Scaffold')]" --output text | \
+        while read table; do
+          echo "🗑️ Deleting DynamoDB table: $table"
+          aws dynamodb delete-table --table-name "$table" || true
+        done
+
+        # 5. CloudWatch Log Groups (después de Lambda/API Gateway)
+        aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/Cloud-Scaffold" --query "logGroups[].logGroupName" --output text | \
+        while read log_group; do
+          echo "🗑️ Deleting Lambda log group: $log_group"
+          aws logs delete-log-group --log-group-name "$log_group" || true
+        done
+
+        aws logs describe-log-groups --log-group-name-prefix "/aws/apigateway/Cloud-Scaffold" --query "logGroups[].logGroupName" --output text | \
+        while read log_group; do
+          echo "🗑️ Deleting API Gateway log group: $log_group"
+          aws logs delete-log-group --log-group-name "$log_group" || true
+        done
+
+        # 6. IAM Roles (último)
+        aws iam list-roles --query "Roles[?contains(RoleName, 'Cloud-Scaffold')].RoleName" --output text | \
+        while read role; do
+          echo "🗑️ Deleting IAM role: $role"
+          aws iam list-role-policies --role-name "$role" --query "PolicyNames[]" --output text | \
+          while read policy; do
+            aws iam delete-role-policy --role-name "$role" --policy-name "$policy" || true
+          done
+          aws iam delete-role --role-name "$role" || true
+        done
+
+        echo "✅ Orphaned resources cleanup completed"
+      working-directory: ./terraform
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_wrapper: false
-
-    - name: Install jq
-      run: sudo apt-get update && sudo apt-get install -y jq
 
     - name: Terraform Init
       run: terraform init
       working-directory: ./terraform
 
-    - name: Empty S3 Bucket Before Destroy
-      run: |
-        # Definir el nombre del bucket directamente
-        BUCKET_NAME="cloud-scaffold-frontend-dev"
-        
-        echo "Verificando bucket: $BUCKET_NAME"
-        
-        # Verificar si el bucket existe
-        if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
-          echo " Bucket encontrado: $BUCKET_NAME"
-          echo " Vaciando el bucket..."
-          
-          # Verificar si el bucket tiene versionado habilitado
-          VERSIONING=$(aws s3api get-bucket-versioning --bucket "$BUCKET_NAME" --query 'Status' --output text 2>/dev/null || echo "None")
-          echo "Estado de versionado: $VERSIONING"
-          
-          if [ "$VERSIONING" = "Enabled" ]; then
-            echo "Eliminando versiones de objetos..."
-            
-            # Eliminar todas las versiones de objetos
-            aws s3api list-object-versions --bucket "$BUCKET_NAME" --output json | \
-            jq -r '.Versions[]? | "--key \"" + .Key + "\" --version-id " + .VersionId' | \
-            while read -r line; do
-              if [ -n "$line" ]; then
-                aws s3api delete-object --bucket "$BUCKET_NAME" $line || true
-              fi
-            done
-            
-            # Eliminar delete markers
-            aws s3api list-object-versions --bucket "$BUCKET_NAME" --output json | \
-            jq -r '.DeleteMarkers[]? | "--key \"" + .Key + "\" --version-id " + .VersionId' | \
-            while read -r line; do
-              if [ -n "$line" ]; then
-                aws s3api delete-object --bucket "$BUCKET_NAME" $line || true
-              fi
-            done
-          fi
-          
-          # Eliminar objetos actuales (funciona con o sin versionado)
-          echo "Eliminando objetos actuales..."
-          aws s3 rm s3://"$BUCKET_NAME" --recursive || true
-          
-          # Verificar que el bucket está vacío
-          OBJECT_COUNT=$(aws s3api list-objects-v2 --bucket "$BUCKET_NAME" --query 'KeyCount' --output text 2>/dev/null || echo "0")
-          echo "Objetos restantes: $OBJECT_COUNT"
-          
-          if [ "$OBJECT_COUNT" = "0" ]; then
-            echo " Bucket vaciado completamente"
-          else
-            echo "Aún quedan $OBJECT_COUNT objetos en el bucket"
-          fi
-          
-        else
-          echo "El bucket $BUCKET_NAME no existe, continuando..."
-        fi
-      working-directory: ./terraform
-
-    - name: Force Delete S3 Bucket (if Terraform fails)
-      run: |
-        BUCKET_NAME="cloud-scaffold-frontend-dev"
-        
-        # Intentar eliminar el bucket directamente si aún existe después del destroy
-        if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
-          echo "Forzando eliminación del bucket..."
-          aws s3 rb s3://"$BUCKET_NAME" --force || true
-          
-          if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
-            echo "No se pudo eliminar el bucket automáticamente"
-            echo "Puede requerir eliminación manual desde la consola de AWS"
-          else
-            echo " Bucket eliminado exitosamente"
-          fi
-        fi
-      working-directory: ./terraform
-
     - name: Terraform Destroy
-      run: terraform destroy -auto-approve
+      run: |
+        terraform destroy -auto-approve \
+          -var="aws_access_key_dynamo_user=${{ secrets.TF_VAR_AWS_ACCESS_KEY_DYNAMO_USER }}" \
+          -var="aws_secret_access_key_dynamo_user=${{ secrets.TF_VAR_AWS_SECRET_ACCESS_KEY_DYNAMO_USER }}" \
+          -var="jwt_secret=${{ secrets.TF_VAR_JWT_SECRET }}" \
+          -var="account_id=${{ secrets.TF_VAR_ACCOUNT_ID }}" \
+          -var="aws_region=${{ secrets.TF_VAR_AWS_REGION }}"
       working-directory: ./terraform
-      env:
-        TF_VAR_aws_access_key_dynamo_user: ${{ secrets.TF_VAR_AWS_ACCESS_KEY_DYNAMO_USER }}
-        TF_VAR_aws_region: ${{ secrets.TF_VAR_AWS_REGION }}
-        TF_VAR_aws_secret_access_key_dynamo_user: ${{ secrets.TF_VAR_AWS_SECRET_ACCESS_KEY_DYNAMO_USER }}
-        TF_VAR_jwt_secret: ${{ secrets.TF_VAR_JWT_SECRET }}
-        TF_VAR_account_id: ${{ secrets.TF_VAR_ACCOUNT_ID }}
